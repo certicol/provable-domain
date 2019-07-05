@@ -1,0 +1,16 @@
+{
+	"name": "provable-domain",
+	"version": "0.1.0",
+	"description": "Domain ownership verification using Provable API",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"keywords": [
+		"ethereum",
+		"certicol",
+		"provable"
+	],
+	"author": "Ken Sze <acken2@outlook.com>",
+	"license": "Apache-2.0"
+}
