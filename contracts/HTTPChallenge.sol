@@ -1,6 +1,6 @@
 pragma solidity 0.5.3;
 
-import "../node_modules/provable-eth-api/provableAPI.sol";
+import "../node_modules/provable-eth-api/provableAPI_0.5.sol";
 
 /**
  * @title Provable-Domain HTTP Challenge Contract
@@ -33,18 +33,18 @@ contract HTTPChallenge is usingProvable {
     /// Event that will be emitted at the initialization of a HTTP challenge
     event HTTPChallengeInitialized(uint256 indexed challengeId, address indexed owner, string domain);
     /// Event that will be emitted upon each failure to solve a HTTP challenge
-    event HTTPChallengeFailed(uint256 indexed challengeId);
+    event HTTPChallengeFailed(uint256 indexed challengeId, bytes proof);
     /// Event that will be emitted upon solving a HTTP challenge
-    event HTTPChallengeSucceed(uint256 indexed challengeId);
+    event HTTPChallengeSucceed(uint256 indexed challengeId, bytes proof);
 
     /**
      * @notice Initialize the contract
      * @param gasLimit uint256 maximum gas that the _callback function would consumes
      */
-    constructor(uint256 gasLimit) {
+    constructor(uint256 gasLimit) public {
         // Demand TLSNotary proof from Provable
         provable_setProof(proofType_TLSNotary | proofStorage_IPFS);
-        // Set gas limit
+        // Set gas limit required for __callback
         GAS_LIMIT = gasLimit;
     }
 
@@ -52,9 +52,8 @@ contract HTTPChallenge is usingProvable {
      * @notice Initialize a HTTP challenge
      * @param owner address address that declared that they control the domain
      * @param domain string domain controlled by the owner
-     * @return uint256 the challenge ID
      */
-    function initChallenge(address owner, string domain) internal returns (uint256) {
+    function initChallenge(address owner, string memory domain) internal {
         // Create an unique challengeID for each challenge
         uint256 challengeID = uint256(keccak256(abi.encodePacked(owner, domain, block.number)));
         // Map the challengeID to its owner
@@ -63,8 +62,6 @@ contract HTTPChallenge is usingProvable {
         domains[challengeID] = domain;
         // Emit HTTPChallengeInitialized event
         emit HTTPChallengeInitialized(challengeID, owner, domain);
-        // Return the challenge ID
-        return challengeID;
     }
 
     /**
@@ -72,7 +69,7 @@ contract HTTPChallenge is usingProvable {
      * @param challengeID uint256 challenge ID
      * @return string the challenge URL that the challenge HTML should be uploaded to
      */
-    function _getChallengeURL(uint256 challengeID) private view returns (string) {
+    function _getChallengeURL(uint256 challengeID) private view returns (string memory) {
         // Challenge URL: declared_domain/_challengeID.html
         return string(abi.encodePacked(domains[challengeID], "/_", owners[challengeID], ".html"));
     }
@@ -83,11 +80,11 @@ contract HTTPChallenge is usingProvable {
      * @return (string, string) the first parameters is the challenge URL that the HTML should be uploaded to,
      * and the second parameter is the challenge HTML string to be uploaded to the challenge URL
      */
-    function getChallenge(uint256 challengeID) public view returns (string, string) {
+    function getChallenge(uint256 challengeID) public view returns (string memory, string memory) {
         // URL: declared_domain/_challengeID.html
-        string requiredURL = _getChallengeURL(challengeID);
+        string memory requiredURL = _getChallengeURL(challengeID);
         // HTML content must return the address of the declared controller of the domain
-        string challengeHTML = string(abi.encodePacked(HTTPPrefix, owners[challengeID], HTTPSuffix));
+        string memory challengeHTML = string(abi.encodePacked(HTTPPrefix, owners[challengeID], HTTPSuffix));
         return (requiredURL, challengeHTML);
     }
 
@@ -96,19 +93,19 @@ contract HTTPChallenge is usingProvable {
      * together when calling the solveChallenge method
      * @return uint the Ethereum cost in Wei
      */
-    function getProvableCost() public view returns (uint256) {
+    function _getProvableCost() internal returns (uint256) {
         return provable_getPrice("URL", GAS_LIMIT);
     }
 
     /**
      * @notice Solve the HTTP challenge
-     * @param challengeID uint256 challenge ID
+     * @param challengeId uint256 challenge ID
      */
     function solveChallenge(uint256 challengeId) public payable {
         // Check if the Ether sent can cover the cost required by Provable
-        require(msg.value >= getProvableCost(), "HTTPChallenge: insufficient funds");
+        require(msg.value >= _getProvableCost(), "HTTPChallenge: insufficient funds");
         // Provable query
-        string queryURL = string(abi.encodePacked("html(", _getChallengeURL(challengeId), ").xpath(//body)"));
+        string memory queryURL = string(abi.encodePacked("html(", _getChallengeURL(challengeId), ").xpath(//body)"));
         bytes32 queryId = provable_query("URL", queryURL, GAS_LIMIT);
         // Record the queryId
         provableIds[queryId] = challengeId;
@@ -118,9 +115,10 @@ contract HTTPChallenge is usingProvable {
      * @notice Callback function used by Provable
      * @param queryId bytes32 Provable query ID
      * @param result string result of the query
+     * @param proof bytes authenticity proofs in the form of IPFS hash
      * @dev implementing _callbackChild method would allow any child contract to take further actions once the verification is successful
      */
-    function _callback(bytes32 queryId, string result) external {
+    function __callback(bytes32 queryId, string memory result, bytes memory proof) public {
         // Check if the msg.sender is Provable
         require(msg.sender == provable_cbAddress(), "HTTPChallenge: _callback can only be called by Provable");
         // Check if the ID has to be processed
@@ -128,23 +126,23 @@ contract HTTPChallenge is usingProvable {
         require(challengeId != 0, "HTTPChallenge: specified challenge cannot be found");
         require(!status[challengeId], "HTTPChallenge: specified challenge is already completed");
         // Check if the result is as expected which is the address of the declared controller
-        if (result != string(owners[challengeId])) {
+        if (keccak256(abi.encodePacked(result)) != keccak256(abi.encodePacked(owners[challengeId]))) {
             // Emit HTTPChallengeFailed
-            emit HTTPChallengeFailed(challengeId);
+            emit HTTPChallengeFailed(challengeId, proof);
             // Failed validation, call _callbackChild
             _callbackChild(challengeId, false);
         }
         // Successful validation, completing the challenge
         status[challengeId] = true;
-        emit HTTPChallengeSucceed(challengeId);
+        emit HTTPChallengeSucceed(challengeId, proof);
         _callbackChild(challengeId, true);
     }
 
     /**
      * @notice Secondary callback function that can be implemented by child contract
-     * @param challengeID uint256 challenge ID
-     * @param status string validation status of the challenge
+     * @param challengeId uint256 challenge ID
+     * @param validated bool validation status of the challenge
      */
-    function _callbackChild(uint256 challengeId, bool status) internal;
+    function _callbackChild(uint256 challengeId, bool validated) internal;
 
 }
