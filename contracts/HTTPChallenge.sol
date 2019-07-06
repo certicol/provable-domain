@@ -137,10 +137,12 @@ contract HTTPChallenge is usingProvable, util {
             // Failed validation, call _callbackChild
             _callbackChild(challengeId, false);
         }
-        // Successful validation, completing the challenge
-        status[challengeId] = true;
-        emit HTTPChallengeSucceed(challengeId, proof);
-        _callbackChild(challengeId, true);
+        else {
+            // Successful validation, completing the challenge
+            status[challengeId] = true;
+            emit HTTPChallengeSucceed(challengeId, proof);
+            _callbackChild(challengeId, true);
+        }
     }
 
     /**
