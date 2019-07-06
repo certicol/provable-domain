@@ -1,6 +1,7 @@
 pragma solidity 0.5.3;
 
 import "../node_modules/provable-eth-api/provableAPI_0.5.sol";
+import "./util.sol";
 
 /**
  * @title Provable-Domain HTTP Challenge Contract
@@ -11,10 +12,12 @@ import "../node_modules/provable-eth-api/provableAPI_0.5.sol";
  *
  * @dev This token contract uses the Provable Ethereum API underneath.
  */
-contract HTTPChallenge is usingProvable {
+contract HTTPChallenge is usingProvable, util {
 
     /// Mapping from the uint256 challenge ID to the declared controller of the domain
     mapping(uint256 => address) private owners;
+    /// Mapping from the uint256 challenge ID to the encoded challenge string
+    mapping(uint256 => string) private challenges;
     /// Mapping from the uint256 challenge ID to the declared domain
     mapping(uint256 => string) private domains;
     /// Mapping from Provable bytes32 queryId to the uint256 challenge ID
@@ -60,6 +63,8 @@ contract HTTPChallenge is usingProvable {
         owners[challengeID] = owner;
         // Map the challengeID to the associated domain
         domains[challengeID] = domain;
+        // Map the challengeID to the challenge string, which is the address of the owner
+        challenges[challengeID] = toAsciiString(owner);
         // Emit HTTPChallengeInitialized event
         emit HTTPChallengeInitialized(challengeID, owner, domain);
     }
@@ -71,7 +76,7 @@ contract HTTPChallenge is usingProvable {
      */
     function _getChallengeURL(uint256 challengeID) private view returns (string memory) {
         // Challenge URL: declared_domain/_challengeID.html
-        return string(abi.encodePacked(domains[challengeID], "/_", owners[challengeID], ".html"));
+        return string(abi.encodePacked(domains[challengeID], "/_", challenges[challengeID], ".html"));
     }
 
     /**
@@ -84,7 +89,7 @@ contract HTTPChallenge is usingProvable {
         // URL: declared_domain/_challengeID.html
         string memory requiredURL = _getChallengeURL(challengeID);
         // HTML content must return the address of the declared controller of the domain
-        string memory challengeHTML = string(abi.encodePacked(HTTPPrefix, owners[challengeID], HTTPSuffix));
+        string memory challengeHTML = string(abi.encodePacked(HTTPPrefix, challenges[challengeID], HTTPSuffix));
         return (requiredURL, challengeHTML);
     }
 
@@ -126,7 +131,7 @@ contract HTTPChallenge is usingProvable {
         require(challengeId != 0, "HTTPChallenge: specified challenge cannot be found");
         require(!status[challengeId], "HTTPChallenge: specified challenge is already completed");
         // Check if the result is as expected which is the address of the declared controller
-        if (keccak256(abi.encodePacked(result)) != keccak256(abi.encodePacked(owners[challengeId]))) {
+        if (keccak256(abi.encodePacked(result)) != keccak256(abi.encodePacked(challenges[challengeId]))) {
             // Emit HTTPChallengeFailed
             emit HTTPChallengeFailed(challengeId, proof);
             // Failed validation, call _callbackChild
