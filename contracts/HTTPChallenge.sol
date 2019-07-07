@@ -96,9 +96,13 @@ contract HTTPChallenge is usingProvable, util {
      /**
      * @notice Get the Ethereum cost for each attempt in solving the HTTP challenge that MUST be sent
      * together when calling the solveChallenge method
+     * @param gasPrice uint256 the gas price intended to be used during the Provable callback
      * @return uint the Ethereum cost in Wei
      */
-    function getProvableCost() public returns (uint256) {
+    function getProvableCost(uint256 gasPrice) public returns (uint256) {
+        // Set gas price to the intended value
+        provable_setCustomGasPrice(gasPrice);
+        // Return the estimated gas price
         return provable_getPrice("URL", GAS_LIMIT);
     }
 
@@ -106,11 +110,17 @@ contract HTTPChallenge is usingProvable, util {
      * @notice Solve the HTTP challenge
      * @param challengeId uint256 challenge ID
      * @dev This function can throws if the transaction is executed with insufficient Ethereum
-     * or too much Ethereum as compared to the cost returned by getProvableCost
+     * or too much Ethereum as compared to the cost returned by getProvableCost. The cost is dependent
+     * on the gas price used in the transaction that calls this function, since the callback from
+     * Provable would use an identical gas price as the gas price used in the transaction that
+     * calls this function. This, therefore, give the user an option to choose the gas price that would
+     * like to use.
      */
     function solveChallenge(uint256 challengeId) public payable {
         // Check if the Ether sent can and exactly cover the cost required by Provable
-        require(msg.value == getProvableCost(), "HTTPChallenge: incorrect funds sent");
+        require(msg.value == getProvableCost(tx.gasprice), "HTTPChallenge: incorrect funds sent");
+        // Check if the challenge has already been completed
+        require(!status[challengeId], "HTTPChallenge: specified challenge is already completed");
         // Provable query
         string memory queryURL = string(abi.encodePacked("html(", _getChallengeURL(challengeId), ").xpath(//body/text())"));
         bytes32 queryId = provable_query("URL", queryURL, GAS_LIMIT);
@@ -128,10 +138,8 @@ contract HTTPChallenge is usingProvable, util {
     function __callback(bytes32 queryId, string memory result, bytes memory proof) public {
         // Check if the msg.sender is Provable
         require(msg.sender == provable_cbAddress(), "HTTPChallenge: _callback can only be called by Provable");
-        // Check if the ID has to be processed
+        // Obtain the challenge ID from the query ID
         uint256 challengeId = provableIds[queryId];
-        require(challengeId != 0, "HTTPChallenge: specified challenge cannot be found");
-        require(!status[challengeId], "HTTPChallenge: specified challenge is already completed");
         // Check if the result is as expected which is the address of the declared controller
         if (keccak256(abi.encodePacked(result)) != keccak256(abi.encodePacked(challenges[challengeId]))) {
             // Emit HTTPChallengeFailed
