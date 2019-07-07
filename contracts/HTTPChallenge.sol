@@ -98,17 +98,19 @@ contract HTTPChallenge is usingProvable, util {
      * together when calling the solveChallenge method
      * @return uint the Ethereum cost in Wei
      */
-    function _getProvableCost() internal returns (uint256) {
+    function getProvableCost() public returns (uint256) {
         return provable_getPrice("URL", GAS_LIMIT);
     }
 
     /**
      * @notice Solve the HTTP challenge
      * @param challengeId uint256 challenge ID
+     * @dev This function can throws if the transaction is executed with insufficient Ethereum
+     * or too much Ethereum as compared to the cost returned by getProvableCost
      */
     function solveChallenge(uint256 challengeId) public payable {
-        // Check if the Ether sent can cover the cost required by Provable
-        require(msg.value >= _getProvableCost(), "HTTPChallenge: insufficient funds");
+        // Check if the Ether sent can and exactly cover the cost required by Provable
+        require(msg.value == getProvableCost(), "HTTPChallenge: incorrect funds sent");
         // Provable query
         string memory queryURL = string(abi.encodePacked("html(", _getChallengeURL(challengeId), ").xpath(//body/text())"));
         bytes32 queryId = provable_query("URL", queryURL, GAS_LIMIT);
