@@ -110,7 +110,7 @@ contract HTTPChallenge is usingProvable, util {
         // Check if the Ether sent can cover the cost required by Provable
         require(msg.value >= _getProvableCost(), "HTTPChallenge: insufficient funds");
         // Provable query
-        string memory queryURL = string(abi.encodePacked("html(", _getChallengeURL(challengeId), ").xpath(//body)"));
+        string memory queryURL = string(abi.encodePacked("html(", _getChallengeURL(challengeId), ").xpath(//body/text())"));
         bytes32 queryId = provable_query("URL", queryURL, GAS_LIMIT);
         // Record the queryId
         provableIds[queryId] = challengeId;
