@@ -8,7 +8,7 @@
 		"test:blockchain": "node_modules/.bin/truffle develop",
 		"test:provable-bridge": "run-s test-provable-bridge:delay test-provable-bridge:core",
 		"test-provable-bridge:delay": "sleep 10",
-		"test-provable-bridge:core": "node_modules/.bin/ethereum-bridge -H localhost:9545 -a 1 --dev",
+		"test-provable-bridge:core": "node_modules/.bin/ethereum-bridge -H localhost:9545 -a 9 --dev",
 		"test:truffle": "run-s test-truffle:delay test-truffle:core",
 		"test-truffle:delay": "sleep 70",
 		"test-truffle:core": "node_modules/.bin/truffle test --network develop"
