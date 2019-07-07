@@ -30,6 +30,20 @@ contract HTTPChallengeTest is HTTPChallenge {
     }
 
     /**
+     * @notice Solve the HTTP challenge
+     * @param challengeId uint256 challenge ID
+     * @dev This function can throws if the transaction is executed with insufficient Ethereum
+     * or too much Ethereum as compared to the cost returned by getProvableCost. The cost is dependent
+     * on the gas price used in the transaction that calls this function, since the callback from
+     * Provable would use an identical gas price as the gas price used in the transaction that
+     * calls this function. This, therefore, give the user an option to choose the gas price that would
+     * like to use.
+     */
+    function solveChallengeTest(uint256 challengeId) public payable {
+        solveChallenge(challengeId);
+    }
+
+    /**
      * @notice Secondary callback function that can be implemented by child contract
      * @param challengeId uint256 challenge ID
      * @param validated bool validation status of the challenge

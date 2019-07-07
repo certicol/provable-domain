@@ -55,41 +55,46 @@ contract HTTPChallenge is usingProvable, util {
      * @notice Initialize a HTTP challenge
      * @param owner address address that declared that they control the domain
      * @param domain string domain controlled by the owner
+     * @return uint256 challenge ID initialized
+     * @dev Child contract should implement a function that call this internal function to initiate the
+     * validation challenge.
      */
-    function initChallenge(address owner, string memory domain) internal {
-        // Create an unique challengeID for each challenge
-        uint256 challengeID = uint256(keccak256(abi.encodePacked(owner, domain, block.number)));
-        // Map the challengeID to its owner
-        owners[challengeID] = owner;
-        // Map the challengeID to the associated domain
-        domains[challengeID] = domain;
-        // Map the challengeID to the challenge string, which is the address of the owner
-        challenges[challengeID] = toAsciiString(owner);
+    function initChallenge(address owner, string memory domain) internal returns (uint256) {
+        // Create an unique challengeId for each challenge
+        uint256 challengeId = uint256(keccak256(abi.encodePacked(owner, domain, block.number)));
+        // Map the challengeId to its owner
+        owners[challengeId] = owner;
+        // Map the challengeId to the associated domain
+        domains[challengeId] = domain;
+        // Map the challengeId to the challenge string, which is the address of the owner
+        challenges[challengeId] = toAsciiString(owner);
         // Emit HTTPChallengeInitialized event
-        emit HTTPChallengeInitialized(challengeID, owner, domain);
+        emit HTTPChallengeInitialized(challengeId, owner, domain);
+        // Return challenge ID
+        return challengeId;
     }
 
     /**
      * @notice Get the challenge URL of an initialized HTTP challenge
-     * @param challengeID uint256 challenge ID
+     * @param challengeId uint256 challenge ID
      * @return string the challenge URL that the challenge HTML should be uploaded to
      */
-    function _getChallengeURL(uint256 challengeID) private view returns (string memory) {
-        // Challenge URL: declared_domain/_challengeID.html
-        return string(abi.encodePacked(domains[challengeID], "/_", challenges[challengeID], ".html"));
+    function _getChallengeURL(uint256 challengeId) private view returns (string memory) {
+        // Challenge URL: declared_domain/_challengeId.html
+        return string(abi.encodePacked(domains[challengeId], "/_", challenges[challengeId], ".html"));
     }
 
     /**
      * @notice Get the detail of an initialized HTTP challenge
-     * @param challengeID uint256 challenge ID
+     * @param challengeId uint256 challenge ID
      * @return (string, string) the first parameters is the challenge URL that the HTML should be uploaded to,
      * and the second parameter is the challenge HTML string to be uploaded to the challenge URL
      */
-    function getChallenge(uint256 challengeID) public view returns (string memory, string memory) {
-        // URL: declared_domain/_challengeID.html
-        string memory requiredURL = _getChallengeURL(challengeID);
+    function getChallenge(uint256 challengeId) public view returns (string memory, string memory) {
+        // URL: declared_domain/_challengeId.html
+        string memory requiredURL = _getChallengeURL(challengeId);
         // HTML content must return the address of the declared controller of the domain
-        string memory challengeHTML = string(abi.encodePacked(HTTPPrefix, challenges[challengeID], HTTPSuffix));
+        string memory challengeHTML = string(abi.encodePacked(HTTPPrefix, challenges[challengeId], HTTPSuffix));
         return (requiredURL, challengeHTML);
     }
 
@@ -115,8 +120,10 @@ contract HTTPChallenge is usingProvable, util {
      * Provable would use an identical gas price as the gas price used in the transaction that
      * calls this function. This, therefore, give the user an option to choose the gas price that would
      * like to use.
+     * @dev Child contract should implement a function that call this internal function to initiate the
+     * validation process.
      */
-    function solveChallenge(uint256 challengeId) public payable {
+    function solveChallenge(uint256 challengeId) internal {
         // Check if the Ether sent can and exactly cover the cost required by Provable
         require(msg.value == getProvableCost(tx.gasprice), "HTTPChallenge: incorrect funds sent");
         // Check if the challenge has already been completed
