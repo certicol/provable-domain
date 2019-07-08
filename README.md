@@ -13,6 +13,12 @@ npm install
 npm test
 ```
 
+## Generate Coverage Report
+
+```
+npm run coverage
+```
+
 ## License
 
 Provable Domain is released under the [Apache License 2.0](LICENSE).
