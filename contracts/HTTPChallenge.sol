@@ -1,6 +1,6 @@
 pragma solidity 0.5.3;
 
-import "../node_modules/provable-eth-api/provableAPI_0.5.sol";
+import "provable-eth-api/provableAPI_0.5.sol";
 import "./util.sol";
 
 /**
