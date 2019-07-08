@@ -1,5 +1,8 @@
 # Provable Domain
 
+[![Build Status](https://travis-ci.org/certicol/provable-domain.svg?branch=master)](https://travis-ci.org/certicol/provable-domain)
+[![Coverage Status](https://coveralls.io/repos/github/certicol/provable-domain/badge.svg?branch=master)](https://coveralls.io/github/certicol/provable-domain?branch=master)
+
 This repository store contract that aims at verifying one's ownership to a domain using Provable Ethereum API.
 
 The idea is similar to Let's Encrypt where one has to show that he/she has control over the domain by returning a specific content in a specific URL under the domain. In its current implementation (HTTPChallenge.sol), one must be able to return the address in the body section of an HTML file under http(s)://declared_domain/_address to prove their control and ownership over the domain.
@@ -13,7 +16,7 @@ npm install
 npm test
 ```
 
-## Generate Coverage Report
+## Generating Coverage Report
 
 ```
 npm run coverage
