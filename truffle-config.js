@@ -5,6 +5,11 @@ module.exports = {
             host: '127.0.0.1',
             port: 9545,
             network_id: "*"
+        },
+        coverage: {
+            host: '127.0.0.1',
+            port: 8555,
+            network_id: "*"
         }
     },
 
