@@ -28,6 +28,12 @@ Provable Domain is released under the [Apache License 2.0](LICENSE).
 
 ## Usage
 
+### Installation
+
+```
+npm i provable-domain
+```
+
 ### Contract Construction
 
 Firstly, you should import HTTPChallenge.sol and extends from it.
@@ -35,7 +41,7 @@ Firstly, you should import HTTPChallenge.sol and extends from it.
 In the constructor of HTTPChallenge, you are required to pass a uint256 as the parameter. This defines the gas limit used by the __callback function and must be set in accordance with the total cumulative gas cost of the __callback function. Since any implementer contract can implement their own callback function (see below), this value must be defined by the child contract.
 
 ```
-import 'HTTPChallenge.sol';
+import 'provable-domain/contracts/HTTPChallenge.sol';
 
 contract Implementer is HTTPChallenge {
 
