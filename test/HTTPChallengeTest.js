@@ -16,7 +16,7 @@ contract('HTTPChallengeTest', function(accounts) {
         '0x' + web3.utils.keccak256('HTTPChallengeTest.Fail').substring(26)
     );
 
-    // Gas price for Provable callback (10 GWei)
+    // Default gas price for Provable callback (10 GWei)
     const callbackGas = '10000000000';
 
     // Storing instance of deployed contract
@@ -27,7 +27,8 @@ contract('HTTPChallengeTest', function(accounts) {
         // Get the instance returned
         contractInstance = await HTTPChallengeTest.new({ from: accounts[1] });
         // Set the provider to WebsocketProvider to allow event subscription
-        contractInstance.contract.setProvider('ws://127.0.0.1:9545'); // develop network in truffle-config.js
+        let currentHTTPProvider = web3.currentProvider.host;
+        contractInstance.contract.setProvider(currentHTTPProvider.replace("http", "ws"));
         // Use up the first free request quota per contract
         let receipt = await contractInstance.initChallengeTest(requestAddressFail, 'https://provable-domain.test.org');
         let challengeId = receipt.logs[0].args.challengeId;
