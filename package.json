@@ -1,6 +1,6 @@
 {
 	"name": "provable-domain",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Domain ownership verification using Provable API",
 	"main": "index.js",
 	"scripts": {
@@ -27,6 +27,7 @@
 		"provable"
 	],
 	"author": "Ken Sze <acken2@outlook.com>",
+	"repository": "github:certicol/provable-domain",
 	"license": "Apache-2.0",
 	"dependencies": {
 		"provable-eth-api": "github:provable-things/ethereum-api"
